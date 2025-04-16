@@ -1,16 +1,78 @@
-# expense_eye
+# ExpenseEye - Modern Expense Tracker
 
-A new Flutter project.
 
-## Getting Started
+ExpenseEye is a modern, feature-rich expense tracking application built with Flutter. It helps users manage their finances by tracking expenses, visualizing spending patterns, and providing insightful analytics.
 
-This project is a starting point for a Flutter application.
+## ✨ Features
 
-A few resources to get you started if this is your first Flutter project:
+- **Expense Tracking**: Easily add, edit, and delete expenses with detailed categorization
+- **Beautiful Analytics**: Visualize spending patterns with interactive pie and bar charts
+- **Category Breakdown**: See exactly where your money is going by category
+- **Daily, Weekly & Monthly Reports**: Track your spending over different time periods
+- **Split Expenses**: Feature to split expenses with friends and family
+- **Export Functionality**: Export expense data for external analysis
+- **Clean UI/UX**: Modern and intuitive user interface built using Material 3 design
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 📱 Screenshots
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+  <img src="assets/screenshot_1.png" alt="Dashboard" width="200"/>
+  <img src="assets/screenshot_2.png" alt="Analytics" width="200"/>
+  <img src="assets/screenshot_3.png" alt="Category Breakdown" width="200"/>
+  <img src="assets/screenshot_4.png" alt="Add Expense" width="200"/>
+</div>
+
+## 🚀 Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/MohammedSafwan10/expense_eye.git
+   ```
+
+2. **Navigate to the project directory**
+   ```bash
+   cd expense_eye
+   ```
+
+3. **Install dependencies**
+   ```bash
+   flutter pub get
+   ```
+
+4. **Run the app**
+   ```bash
+   flutter run
+   ```
+
+## 🛠️ Technologies Used
+
+- **Flutter**: Framework for building natively compiled applications
+- **Provider**: State management solution
+- **FL Chart**: Library for creating beautiful charts
+- **Intl**: For internationalization and date formatting
+- **Path Provider**: For handling file system access
+- **SQLite**: For local database storage
+
+## 🌟 Future Enhancements
+
+- Cloud synchronization across devices
+- Budget planning and alerts
+- Receipt scanning and automatic entry
+- Multi-currency support
+- Dark/Light theme toggle
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/MohammedSafwan10/expense_eye/issues).
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📧 Contact
+
+Mohammed Safwan - [@MohammedSafwan10](https://github.com/MohammedSafwan10)
+
+---
+
+<p align="center">Built with ❤️ using Flutter</p>
