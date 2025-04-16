@@ -14,10 +14,14 @@ ExpenseEye is a modern, feature-rich expense tracking application built with Flu
 - **Export Functionality**: Export expense data for external analysis
 - **Clean UI/UX**: Modern and intuitive user interface built using Material 3 design
 
-
-
 ## 🚀 Installation
 
+### Option 1: Download the APK directly
+- Download the APK file from the [latest release](https://github.com/MohammedSafwan10/expense_eye/releases/latest)
+- Open the APK file on your Android device to install it
+- No coding required - just install and start using!
+
+### Option 2: Build from source
 1. **Clone the repository**
    ```bash
    git clone https://github.com/MohammedSafwan10/expense_eye.git
