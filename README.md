@@ -16,7 +16,7 @@ ExpenseEye is a modern, feature-rich expense tracking application built with Flu
 ## 📱 Screenshots
 
 <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-  <img src="![image](https://github.com/user-attachments/assets/41286baf-98fb-4daf-808a-be19dbad17cb)
+  <img src="![1st internal qs](https://github.com/user-attachments/assets/986d984b-1ee1-4e31-bd1d-75e64ca02485)
 " alt="Dashboard" width="200"/>
   <img src="assets/screenshot_2.png" alt="Analytics" width="200"/>
   <img src="assets/screenshot_3.png" alt="Category Breakdown" width="200"/>
