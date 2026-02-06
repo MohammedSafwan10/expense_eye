@@ -52,25 +52,25 @@ class _ExpenseChartState extends State<ExpenseChart>
     super.dispose();
   }
 
-  // Returns a color based on the provided ExpenseCategory.
+  // Returns a color based on the provided ExpenseCategory using AppTheme-like colors
   Color _getCategoryColor(ExpenseCategory category) {
     switch (category) {
       case ExpenseCategory.food:
-        return const Color(0xFFFF6B6B); // Red-ish
+        return const Color(0xFFF43F5E); // Rose
       case ExpenseCategory.transportation:
-        return const Color(0xFF4ECDC4); // Teal
+        return const Color(0xFF06B6D4); // Cyan
       case ExpenseCategory.utilities:
-        return const Color(0xFFFFBE0B); // Yellow
+        return const Color(0xFFFACC15); // Yellow
       case ExpenseCategory.entertainment:
-        return const Color(0xFF845EC2); // Purple
+        return const Color(0xFF8B5CF6); // Violet
       case ExpenseCategory.shopping:
-        return const Color(0xFF00C9A7); // Green-ish
+        return const Color(0xFF10B981); // Emerald
       case ExpenseCategory.health:
-        return const Color(0xFFFF9671); // Orange-ish
+        return const Color(0xFFEC4899); // Pink
       case ExpenseCategory.education:
-        return const Color(0xFF4D8076); // Dark Green
+        return const Color(0xFF6366F1); // Indigo
       case ExpenseCategory.other:
-        return const Color(0xFFB39CD0); // Light Purple
+        return const Color(0xFF94A3B8); // Slate
     }
   }
 
@@ -129,7 +129,7 @@ class _ExpenseChartState extends State<ExpenseChart>
 
         return Scaffold(
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12), // Reduced for mobile
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -140,39 +140,24 @@ class _ExpenseChartState extends State<ExpenseChart>
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12), // Reduced for mobile
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            Flexible(
-                              child: Text(
-                                'Analytics',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
                             SegmentedButton<bool>(
                               segments: const [
                                 ButtonSegment<bool>(
                                   value: true,
-                                  icon: Icon(Icons.pie_chart, size: 18),
-                                  label: Text('Category',
-                                      style: TextStyle(fontSize: 12)),
+                                  icon: Icon(Icons.pie_chart, size: 20),
+                                  tooltip: 'Category',
                                 ),
                                 ButtonSegment<bool>(
                                   value: false,
-                                  icon: Icon(Icons.bar_chart, size: 18),
-                                  label: Text('Time',
-                                      style: TextStyle(fontSize: 12)),
+                                  icon: Icon(Icons.bar_chart, size: 20),
+                                  tooltip: 'Time',
                                 ),
                               ],
                               selected: {_showPieChart},
@@ -190,7 +175,7 @@ class _ExpenseChartState extends State<ExpenseChart>
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16), // Reduced for mobile
                         AnimatedCrossFade(
                           firstChild: _buildPieChart(
                             context,
@@ -236,7 +221,7 @@ class _ExpenseChartState extends State<ExpenseChart>
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16), // Reduced for mobile
                 if (_showPieChart)
                   _buildCategoryBreakdown(
                       context, categoryExpenses, totalExpense)
@@ -266,9 +251,9 @@ class _ExpenseChartState extends State<ExpenseChart>
         title: isSelected
             ? '${percentage.toStringAsFixed(1)}%'
             : '', // Only show percentage on selected
-        radius: isSelected ? 115 : 100,
+        radius: isSelected ? 75 : 65, // Smaller for mobile
         titleStyle: TextStyle(
-          fontSize: isSelected ? 16 : 14,
+          fontSize: isSelected ? 14 : 12,
           fontWeight: FontWeight.bold,
           color: Colors.white,
           shadows: [
@@ -283,35 +268,25 @@ class _ExpenseChartState extends State<ExpenseChart>
             ),
           ],
         ),
-        badgeWidget: CircleAvatar(
-          backgroundColor: isSelected
-              ? Colors.white
-              : Colors.white.withValues(
-                  red: 255,
-                  green: 255,
-                  blue: 255,
-                  alpha: 0.8,
-                ),
-          radius: isSelected ? 20 : 16,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _getCategoryEmoji(entry.key),
-                style: TextStyle(fontSize: isSelected ? 14 : 12),
+        badgeWidget: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
-              if (isSelected)
-                Text(
-                  '${percentage.toStringAsFixed(0)}%',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
             ],
           ),
+          child: Text(
+            _getCategoryEmoji(entry.key),
+            style: TextStyle(fontSize: isSelected ? 14 : 12),
+          ),
         ),
-        badgePositionPercentageOffset: 0.85, // Move badges closer to center
+        badgePositionPercentageOffset: 0.95, // Push emoji badges further out
       );
     }).toList();
 
@@ -319,8 +294,9 @@ class _ExpenseChartState extends State<ExpenseChart>
       animation: _animation,
       builder: (context, child) {
         return Container(
-          height: 300,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          height:
+              280, // Increased height significantly to prevent "cut off" and clustering
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Column(
             children: [
               Expanded(
@@ -341,8 +317,9 @@ class _ExpenseChartState extends State<ExpenseChart>
                       },
                     ),
                     borderData: FlBorderData(show: false),
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 40, // Add center space
+                    sectionsSpace: 3, // Slightly more space between sections
+                    centerSpaceRadius:
+                        55, // Larger center space for cleaner look
                     sections: sections.map((section) {
                       return PieChartSectionData(
                         color: section.color,
@@ -450,7 +427,7 @@ class _ExpenseChartState extends State<ExpenseChart>
       animation: _animation,
       builder: (context, child) {
         return Container(
-          height: 300,
+          height: 200, // Smaller height for mobile
           padding: const EdgeInsets.only(top: 16, right: 16, left: 8),
           child: Column(
             children: [
@@ -461,7 +438,7 @@ class _ExpenseChartState extends State<ExpenseChart>
                       touchTooltipData: BarTouchTooltipData(
                         getTooltipColor: (barGroup) =>
                             Theme.of(context).colorScheme.surface,
-                        tooltipRoundedRadius: 8,
+                        tooltipBorderRadius: BorderRadius.circular(8),
                         tooltipPadding: const EdgeInsets.all(8),
                         tooltipMargin: 8,
                         getTooltipItem: (group, groupIndex, rod, rodIndex) {
@@ -692,44 +669,32 @@ class _ExpenseChartState extends State<ExpenseChart>
                     barGroups: weeklyData.entries.map((entry) {
                       final weekday = entry.key;
                       final value = entry.value;
-                      final today = DateTime.now();
-                      final isToday = weekday == today.weekday - 1;
 
                       return BarChartGroupData(
                         x: weekday,
                         barRods: [
                           BarChartRodData(
                             toY: value * _animation.value,
-                            width: 16, // Reduced from 20
-                            color: isToday
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context)
+                            width: 14,
+                            gradient: LinearGradient(
+                              colors: [
+                                Theme.of(context).colorScheme.primary,
+                                Theme.of(context)
                                     .colorScheme
                                     .primary
-                                    .withValues(
-                                      red: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .r
-                                          .toDouble(),
-                                      green: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .g
-                                          .toDouble(),
-                                      blue: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .b
-                                          .toDouble(),
-                                      alpha: 0.7,
-                                    ),
-                            borderRadius:
-                                BorderRadius.circular(6), // Increased from 4
+                                    .withValues(alpha: 0.6),
+                              ],
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                            ),
+                            borderRadius: BorderRadius.circular(4),
                             backDrawRodData: BackgroundBarChartRodData(
                               show: true,
-                              toY: maxValue,
-                              color: Theme.of(context).colorScheme.surface,
+                              toY: maxValue == 0 ? 100 : maxValue,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.05),
                             ),
                           ),
                         ],
@@ -797,17 +762,12 @@ class _ExpenseChartState extends State<ExpenseChart>
         borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12), // Reduced for mobile
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Category Breakdown',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 16),
+            // Removed 'Category Breakdown' Title for cleaner look
+            const SizedBox(height: 4),
             ...sortedEntries.map((entry) {
               final category = entry.key;
               final amount = entry.value;
@@ -815,15 +775,15 @@ class _ExpenseChartState extends State<ExpenseChart>
               final color = _getCategoryColor(category);
 
               return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.only(bottom: 12), // Reduced
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
                         Container(
-                          width: 40,
-                          height: 40,
+                          width: 36, // Smaller for mobile
+                          height: 36,
                           decoration: BoxDecoration(
                             color: color.withValues(
                               red: color.r.toDouble(),
@@ -831,16 +791,16 @@ class _ExpenseChartState extends State<ExpenseChart>
                               blue: color.b.toDouble(),
                               alpha: 0.15,
                             ),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Center(
                             child: Text(
                               _getCategoryEmoji(category),
-                              style: const TextStyle(fontSize: 20),
+                              style: const TextStyle(fontSize: 16), // Smaller
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12), // Reduced
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

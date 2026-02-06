@@ -482,87 +482,82 @@ class _ExpenseSummaryState extends State<ExpenseSummary>
     Color color, {
     String? subtitle,
   }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: color.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: 0.05),
+            color.withValues(alpha: 0.01),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12), // Reduced padding
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.min, // Use minimum space
           children: [
             Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8), // Smaller
                   decoration: BoxDecoration(
-                    color: color.withValues(
-                      red: color.r.toDouble(),
-                      green: color.g.toDouble(),
-                      blue: color.b.toDouble(),
-                      alpha: 0.15,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     icon,
                     color: color,
-                    size: 18,
+                    size: 16, // Smaller icon
                   ),
                 ),
-                const SizedBox(width: 8),
-                Flexible(
+                const SizedBox(width: 8), // Reduced
+                Expanded(
                   child: Text(
                     title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.7),
                         ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            const Spacer(),
+            const SizedBox(height: 8),
             FittedBox(
               fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
               child: Text(
                 currencyFormat.format(amount),
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: color,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      letterSpacing: -0.5,
                     ),
               ),
             ),
             if (subtitle != null)
-              Flexible(
-                child: Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color:
-                            Theme.of(context).colorScheme.onSurface.withValues(
-                                  red: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .r
-                                      .toDouble(),
-                                  green: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .g
-                                      .toDouble(),
-                                  blue: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .b
-                                      .toDouble(),
-                                  alpha: 0.6,
-                                ),
-                      ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.4),
+                    ),
               ),
           ],
         ),
@@ -729,21 +724,21 @@ class _ExpenseSummaryState extends State<ExpenseSummary>
   Color _getCategoryColor(ExpenseCategory category) {
     switch (category) {
       case ExpenseCategory.food:
-        return const Color(0xFFFF6B6B); // Red-ish
+        return const Color(0xFFF43F5E); // Rose
       case ExpenseCategory.transportation:
-        return const Color(0xFF4ECDC4); // Teal
+        return const Color(0xFF06B6D4); // Cyan
       case ExpenseCategory.utilities:
-        return const Color(0xFFFFBE0B); // Yellow
+        return const Color(0xFFFACC15); // Yellow
       case ExpenseCategory.entertainment:
-        return const Color(0xFF845EC2); // Purple
+        return const Color(0xFF8B5CF6); // Violet
       case ExpenseCategory.shopping:
-        return const Color(0xFF00C9A7); // Green-ish
+        return const Color(0xFF10B981); // Emerald
       case ExpenseCategory.health:
-        return const Color(0xFFFF9671); // Orange-ish
+        return const Color(0xFFEC4899); // Pink
       case ExpenseCategory.education:
-        return const Color(0xFF4D8076); // Dark Green
+        return const Color(0xFF6366F1); // Indigo
       case ExpenseCategory.other:
-        return const Color(0xFFB39CD0); // Light Purple
+        return const Color(0xFF94A3B8); // Slate
     }
   }
 }

@@ -23,6 +23,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Index of the currently selected tab in the bottom navigation bar.
   int _selectedIndex = 0;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
   late final AnimationController _fabAnimationController;
   late final AnimationController _pageTransitionController;
   late final Animation<double> _fabScaleAnimation;
@@ -68,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     // Start animations after the first frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('📱 [HomeScreen] Initial load triggered');
       Provider.of<ExpenseProvider>(context, listen: false).loadExpenses();
       _fabAnimationController.forward();
     });
@@ -77,23 +80,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void dispose() {
     _fabAnimationController.dispose();
     _pageTransitionController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   // Called when a bottom navigation item is tapped, updates the selected index.
   void _onItemTapped(int index) {
+    debugPrint('📱 [HomeScreen] Tab switched to index: $index');
     setState(() {
       _selectedIndex = index;
     });
 
+    // Reload expenses when returning to Dashboard for real-time updates
+    if (index == 0) {
+      debugPrint('📱 [HomeScreen] Dashboard selected - reloading expenses');
+      Provider.of<ExpenseProvider>(context, listen: false).loadExpenses();
+    }
+
     // Reset and restart page transition animation
     _pageTransitionController.reset();
     _pageTransitionController.forward();
-
-    // Ensure expense data is refreshed when changing tabs
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ExpenseProvider>(context, listen: false).loadExpenses();
-    });
   }
 
   // Builds the UI for the HomeScreen.
@@ -106,7 +112,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Consumer<ExpenseProvider>(
       builder: (context, expenseProvider, child) {
         return Scaffold(
-          extendBodyBehindAppBar: true,
+          extendBodyBehindAppBar: false,
           appBar: AppBar(
             elevation: 0,
             backgroundColor: theme.colorScheme.primary,
@@ -160,30 +166,45 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 );
               },
-              child: expenseProvider.isSelectionMode
-                  ? Text(
-                      '${expenseProvider.selectedExpenseIds.length} Selected',
-                      key: const ValueKey('selection-title'),
+              child: _isSearching
+                  ? TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Search expenses...',
+                        hintStyle: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6)),
+                        border: InputBorder.none,
+                      ),
+                      onChanged: (value) {
+                        expenseProvider.setSearchQuery(value);
+                      },
                     )
-                  : Column(
-                      key: const ValueKey('screen-title'),
-                      children: [
-                        Text(
-                          _screenTitles[_selectedIndex],
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (_selectedIndex == 0)
-                          Text(
-                            '${expenseProvider.expenses.length} expenses',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white70,
+                  : expenseProvider.isSelectionMode
+                      ? Text(
+                          '${expenseProvider.selectedExpenseIds.length} Selected',
+                          key: const ValueKey('selection-title'),
+                        )
+                      : Column(
+                          key: const ValueKey('screen-title'),
+                          children: [
+                            Text(
+                              _screenTitles[_selectedIndex],
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                      ],
-                    ),
+                            if (_selectedIndex == 0)
+                              Text(
+                                '${expenseProvider.expenses.length} expenses',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: Colors.white70,
+                                ),
+                              ),
+                          ],
+                        ),
             ),
             actions: [
               // Show these actions only when in selection mode.
@@ -247,15 +268,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ] else ...[
                 // Search icon that will be added later
                 IconButton(
-                  icon: const Icon(Icons.search),
+                  icon: Icon(_isSearching ? Icons.close : Icons.search),
                   onPressed: () {
-                    // Will be implemented in future
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Search feature coming soon'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
+                    setState(() {
+                      _isSearching = !_isSearching;
+                      if (!_isSearching) {
+                        _searchController.clear();
+                        expenseProvider.setSearchQuery('');
+                      }
+                    });
                   },
                 ),
                 IconButton(
@@ -273,190 +294,128 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 decoration: BoxDecoration(
                   color: theme.scaffoldBackgroundColor,
                   borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
                   ),
                 ),
               ),
             ),
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
+              ),
+            ),
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.primary.withValues(alpha: 0.85),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
             ),
           ),
           body: SafeArea(
             top: false,
             bottom: true,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: Padding(
-                padding: const EdgeInsets.only(top: 0),
-                child: IndexedStack(
-                  key: ValueKey<int>(_selectedIndex),
-                  index: _selectedIndex,
-                  children: [
-                    AnimatedBuilder(
-                      animation: _pageTransitionController,
-                      builder: (context, child) {
-                        return FadeTransition(
-                          opacity: CurvedAnimation(
-                            parent: _pageTransitionController,
-                            curve: Curves.easeOut,
-                          ),
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0.05, 0),
-                              end: Offset.zero,
-                            ).animate(
-                              CurvedAnimation(
-                                parent: _pageTransitionController,
-                                curve: Curves.easeOutCubic,
-                              ),
-                            ),
-                            child: const ExpenseList(),
-                          ),
-                        );
-                      },
-                    ),
-                    AnimatedBuilder(
-                      animation: _pageTransitionController,
-                      builder: (context, child) {
-                        return FadeTransition(
-                          opacity: CurvedAnimation(
-                            parent: _pageTransitionController,
-                            curve: Curves.easeOut,
-                          ),
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0.05, 0),
-                              end: Offset.zero,
-                            ).animate(
-                              CurvedAnimation(
-                                parent: _pageTransitionController,
-                                curve: Curves.easeOutCubic,
-                              ),
-                            ),
-                            child: const ExpenseChart(),
-                          ),
-                        );
-                      },
-                    ),
-                    AnimatedBuilder(
-                      animation: _pageTransitionController,
-                      builder: (context, child) {
-                        return FadeTransition(
-                          opacity: CurvedAnimation(
-                            parent: _pageTransitionController,
-                            curve: Curves.easeOut,
-                          ),
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0.05, 0),
-                              end: Offset.zero,
-                            ).animate(
-                              CurvedAnimation(
-                                parent: _pageTransitionController,
-                                curve: Curves.easeOutCubic,
-                              ),
-                            ),
-                            child: const ExpenseSummary(),
-                          ),
-                        );
-                      },
-                    ),
-                    AnimatedBuilder(
-                      animation: _pageTransitionController,
-                      builder: (context, child) {
-                        return FadeTransition(
-                          opacity: CurvedAnimation(
-                            parent: _pageTransitionController,
-                            curve: Curves.easeOut,
-                          ),
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0.05, 0),
-                              end: Offset.zero,
-                            ).animate(
-                              CurvedAnimation(
-                                parent: _pageTransitionController,
-                                curve: Curves.easeOutCubic,
-                              ),
-                            ),
-                            child: const FavoritesScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: const [
+                ExpenseList(),
+                ExpenseChart(),
+                ExpenseSummary(),
+                FavoritesScreen(),
+              ],
             ),
           ),
-          floatingActionButton: !expenseProvider.isSelectionMode
-              ? ScaleTransition(
-                  scale: _fabScaleAnimation,
-                  child: RotationTransition(
-                    turns: _fabRotateAnimation,
-                    child: FloatingActionButton(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          PageRouteBuilder(
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) =>
-                                    const AddExpenseScreen(),
-                            transitionsBuilder: (context, animation,
-                                secondaryAnimation, child) {
-                              return FadeTransition(
-                                opacity: animation,
-                                child: child,
-                              );
-                            },
+          floatingActionButton:
+              !expenseProvider.isSelectionMode && _selectedIndex == 0
+                  ? ScaleTransition(
+                      scale: _fabScaleAnimation,
+                      child: RotationTransition(
+                        turns: _fabRotateAnimation,
+                        child: FloatingActionButton(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                        );
-                      },
-                      child: const Icon(Icons.add),
-                    ),
-                  ),
-                )
-              : null,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        const AddExpenseScreen(),
+                                transitionsBuilder: (context, animation,
+                                    secondaryAnimation, child) {
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                          child: const Icon(Icons.add),
+                        ),
+                      ),
+                    )
+                  : null,
           floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-          bottomNavigationBar: NavigationBar(
-            elevation: 8,
-            backgroundColor:
-                isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-            height: 70,
-            labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: _onItemTapped,
-            destinations: [
-              NavigationDestination(
-                icon: const Icon(Icons.dashboard_outlined),
-                selectedIcon: const Icon(Icons.dashboard),
-                label: 'Dashboard',
+          bottomNavigationBar: SafeArea(
+            bottom: true,
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDarkMode ? const Color(0xFF0F172A) : Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
               ),
-              NavigationDestination(
-                icon: const Icon(Icons.pie_chart_outline),
-                selectedIcon: const Icon(Icons.pie_chart),
-                label: 'Analytics',
+              child: NavigationBar(
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                height: 80,
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: _onItemTapped,
+                indicatorColor:
+                    theme.colorScheme.primary.withValues(alpha: 0.1),
+                destinations: [
+                  NavigationDestination(
+                    icon: const Icon(Icons.dashboard_outlined),
+                    selectedIcon:
+                        Icon(Icons.dashboard, color: theme.colorScheme.primary),
+                    label: 'Dashboard',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.pie_chart_outline),
+                    selectedIcon:
+                        Icon(Icons.pie_chart, color: theme.colorScheme.primary),
+                    label: 'Analytics',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.analytics_outlined),
+                    selectedIcon:
+                        Icon(Icons.analytics, color: theme.colorScheme.primary),
+                    label: 'Overview',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.favorite_outline),
+                    selectedIcon:
+                        Icon(Icons.favorite, color: theme.colorScheme.primary),
+                    label: 'Favorites',
+                  ),
+                ],
               ),
-              NavigationDestination(
-                icon: const Icon(Icons.analytics_outlined),
-                selectedIcon: const Icon(Icons.analytics),
-                label: 'Overview',
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.favorite_outline),
-                selectedIcon: const Icon(Icons.favorite),
-                label: 'Favorites',
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -473,133 +432,139 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           builder: (context, setState) {
             return BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
+              child: SafeArea(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
                   ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Filter Expenses',
-                          style: Theme.of(context).textTheme.titleLarge,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Filter Expenses',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              provider.clearFilters();
+                              Navigator.pop(context);
+                            },
+                            child: const Text('Reset'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Categories',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: ExpenseCategory.values.map((category) {
+                          final isSelected =
+                              provider.selectedCategory == category;
+                          return FilterChip(
+                            selected: isSelected,
+                            label: Text(category.name),
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  provider.setSelectedCategory(category);
+                                } else {
+                                  provider.setSelectedCategory(null);
+                                }
+                              });
+                            },
+                            backgroundColor:
+                                Theme.of(context).chipTheme.backgroundColor,
+                            selectedColor: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(
+                                  red: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .r
+                                      .toDouble(),
+                                  green: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .g
+                                      .toDouble(),
+                                  blue: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .b
+                                      .toDouble(),
+                                  alpha: 0.15,
+                                ),
+                            checkmarkColor:
+                                Theme.of(context).colorScheme.primary,
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Date',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.calendar_today),
+                        label: Text(
+                          provider.selectedDate != null
+                              ? '${provider.selectedDate!.day}/${provider.selectedDate!.month}/${provider.selectedDate!.year}'
+                              : 'Select Date',
                         ),
+                        onPressed: () async {
+                          final selectedDate = await showDatePicker(
+                            context: context,
+                            initialDate:
+                                provider.selectedDate ?? DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                          );
+                          if (selectedDate != null) {
+                            setState(() {
+                              provider.setSelectedDate(selectedDate);
+                            });
+                          }
+                        },
+                      ),
+                      if (provider.selectedDate != null)
                         TextButton(
                           onPressed: () {
-                            provider.clearFilters();
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Reset'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Categories',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: ExpenseCategory.values.map((category) {
-                        final isSelected =
-                            provider.selectedCategory == category;
-                        return FilterChip(
-                          selected: isSelected,
-                          label: Text(category.name),
-                          onSelected: (selected) {
                             setState(() {
-                              if (selected) {
-                                provider.setSelectedCategory(category);
-                              } else {
-                                provider.setSelectedCategory(null);
-                              }
+                              provider.setSelectedDate(null);
                             });
                           },
-                          backgroundColor:
-                              Theme.of(context).chipTheme.backgroundColor,
-                          selectedColor:
-                              Theme.of(context).colorScheme.primary.withValues(
-                                    red: Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .r
-                                        .toDouble(),
-                                    green: Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .g
-                                        .toDouble(),
-                                    blue: Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .b
-                                        .toDouble(),
-                                    alpha: 0.15,
-                                  ),
-                          checkmarkColor: Theme.of(context).colorScheme.primary,
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Date',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.calendar_today),
-                      label: Text(
-                        provider.selectedDate != null
-                            ? '${provider.selectedDate!.day}/${provider.selectedDate!.month}/${provider.selectedDate!.year}'
-                            : 'Select Date',
-                      ),
-                      onPressed: () async {
-                        final selectedDate = await showDatePicker(
-                          context: context,
-                          initialDate: provider.selectedDate ?? DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime.now(),
-                        );
-                        if (selectedDate != null) {
-                          setState(() {
-                            provider.setSelectedDate(selectedDate);
-                          });
-                        }
-                      },
-                    ),
-                    if (provider.selectedDate != null)
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            provider.setSelectedDate(null);
-                          });
-                        },
-                        child: const Text('Clear Date'),
-                      ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text('Apply Filters'),
+                          child: const Text('Clear Date'),
+                        ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Text('Apply Filters'),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
             );

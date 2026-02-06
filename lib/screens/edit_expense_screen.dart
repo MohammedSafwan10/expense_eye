@@ -30,6 +30,8 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
   late ExpenseCategory _selectedCategory;
   // Stores the currently selected payment method, initialized in initState.
   late PaymentMethod _selectedPaymentMethod;
+  // Whether this expense is marked as favorite.
+  late bool _isFavorite;
 
   // Called only once when the widget is created, before the build method is called.
   // Used here to initialize the controllers and selected values with the existing expense data.
@@ -43,6 +45,7 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
     _selectedDate = widget.expense.date;
     _selectedCategory = widget.expense.category;
     _selectedPaymentMethod = widget.expense.paymentMethod;
+    _isFavorite = widget.expense.isFavorite;
   }
 
   // Called when the state object is removed permanently from the widget tree.
@@ -96,6 +99,7 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
         date: _selectedDate,
         category: _selectedCategory,
         paymentMethod: _selectedPaymentMethod,
+        isFavorite: _isFavorite,
         note: _noteController.text
                 .trim()
                 .isEmpty // If note is empty, set it to null.
@@ -262,6 +266,24 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
                   ),
                   maxLines: 3,
                   textCapitalization: TextCapitalization.sentences,
+                ),
+                const SizedBox(height: 16),
+                // Switch for marking the expense as a favorite.
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: SwitchListTile(
+                    title: const Text('Mark as Favorite'),
+                    secondary: Icon(
+                      _isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: _isFavorite ? Colors.red : null,
+                    ),
+                    value: _isFavorite,
+                    onChanged: (value) {
+                      setState(() {
+                        _isFavorite = value;
+                      });
+                    },
+                  ),
                 ),
                 const SizedBox(height: 24),
                 // Filled button to submit the updated form.

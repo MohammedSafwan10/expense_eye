@@ -13,7 +13,7 @@ class ExportService {
   // Shares the details of a single expense as plain text.
   static Future<void> shareExpense(Expense expense) async {
     final details = _formatExpenseDetails(expense);
-    await Share.share(details);
+    await SharePlus.instance.share(ShareParams(text: details));
   }
 
   // Exports the details of a single expense as a text file.
@@ -39,7 +39,9 @@ class ExportService {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/expense_${expense.id}.txt');
       await file.writeAsString(details);
-      await Share.shareXFiles([XFile(file.path)], text: 'Expense Details');
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path)], text: 'Expense Details'),
+      );
     }
   }
 
@@ -97,7 +99,9 @@ class ExportService {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/expense_${expense.id}.pdf');
       await file.writeAsBytes(bytes);
-      await Share.shareXFiles([XFile(file.path)], text: 'Expense Details PDF');
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path)], text: 'Expense Details PDF'),
+      );
     }
   }
 

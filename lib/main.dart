@@ -86,7 +86,7 @@ class ExpenseEyeApp extends StatelessWidget {
                   letterSpacing: 0.5,
                 ),
               ),
-              cardTheme: CardTheme(
+              cardTheme: CardThemeData(
                 elevation: 2,
                 shadowColor: primaryColor.withValues(
                   red: primaryColor.r.toDouble(),
@@ -194,7 +194,7 @@ class ExpenseEyeApp extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              dialogTheme: DialogTheme(
+              dialogTheme: DialogThemeData(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                 ),
@@ -318,7 +318,7 @@ class ExpenseEyeApp extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
-              cardTheme: CardTheme(
+              cardTheme: CardThemeData(
                 elevation: 2,
                 shadowColor: Colors.black.withValues(
                   red: 0,
@@ -427,7 +427,7 @@ class ExpenseEyeApp extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              dialogTheme: DialogTheme(
+              dialogTheme: DialogThemeData(
                 backgroundColor: const Color(0xFF1E1E1E),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),

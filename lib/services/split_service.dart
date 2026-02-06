@@ -170,6 +170,6 @@ class SplitService {
           .writeln('${split['name']}: ₹${split['amount'].toStringAsFixed(2)}');
     }
 
-    await Share.share(details.toString());
+    await SharePlus.instance.share(ShareParams(text: details.toString()));
   }
 }

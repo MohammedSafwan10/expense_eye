@@ -27,6 +27,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   ExpenseCategory _selectedCategory = ExpenseCategory.food;
   // Stores the currently selected payment method, initialized to 'cash'.
   PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
+  // Whether this expense is marked as favorite.
+  bool _isFavorite = false;
 
   // Called when the state object is removed permanently from the widget tree.
   // It's good practice to dispose of controllers to release resources.
@@ -79,6 +81,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         date: _selectedDate,
         category: _selectedCategory,
         paymentMethod: _selectedPaymentMethod,
+        isFavorite: _isFavorite,
         note: _noteController.text
                 .trim()
                 .isEmpty // If note is empty, set it to null.
@@ -155,6 +158,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter a title';
                   }
+                  if (value.trim().length > 100) {
+                    return 'Title must be less than 100 characters';
+                  }
                   return null;
                 },
               ),
@@ -182,6 +188,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   if (amount <= 0) {
                     return 'Amount must be greater than 0';
                   }
+                  if (amount > 100000000) {
+                    return 'Amount cannot exceed ₹10 crore';
+                  }
                   return null;
                 },
               ),
@@ -202,7 +211,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               const SizedBox(height: 16),
               // Dropdown button for selecting the expense category.
               DropdownButtonFormField<ExpenseCategory>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: const InputDecoration(
                   labelText: 'Category',
                   border: OutlineInputBorder(),
@@ -223,7 +232,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               const SizedBox(height: 16),
               // Dropdown button for selecting the payment method.
               DropdownButtonFormField<PaymentMethod>(
-                value: _selectedPaymentMethod,
+                initialValue: _selectedPaymentMethod,
                 decoration: const InputDecoration(
                   labelText: 'Payment Method',
                   border: OutlineInputBorder(),
@@ -252,6 +261,24 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 ),
                 maxLines: 3,
                 textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 16),
+              // Switch for marking the expense as a favorite.
+              Card(
+                margin: EdgeInsets.zero,
+                child: SwitchListTile(
+                  title: const Text('Mark as Favorite'),
+                  secondary: Icon(
+                    _isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: _isFavorite ? Colors.red : null,
+                  ),
+                  value: _isFavorite,
+                  onChanged: (value) {
+                    setState(() {
+                      _isFavorite = value;
+                    });
+                  },
+                ),
               ),
               const SizedBox(height: 24),
               // Filled button to submit the form.

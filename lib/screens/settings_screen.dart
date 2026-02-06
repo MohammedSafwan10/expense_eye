@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:expense_eye/providers/expense_provider.dart';
 import 'package:expense_eye/providers/theme_provider.dart';
 
@@ -66,6 +69,12 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.download_outlined),
+            title: const Text('Export All Data'),
+            subtitle: const Text('Download expenses as CSV for backup'),
+            onTap: () => _exportAllData(context),
+          ),
           const Divider(),
           const _SectionHeader(title: 'About'),
           ListTile(
@@ -94,6 +103,56 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _exportAllData(BuildContext context) async {
+    final expenses =
+        Provider.of<ExpenseProvider>(context, listen: false).expenses;
+
+    if (expenses.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No expenses to export'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Create CSV content
+    final StringBuffer csv = StringBuffer();
+    csv.writeln('Title,Amount,Category,Date,Payment Method,Note,Is Favorite');
+
+    for (final expense in expenses) {
+      final note = expense.note?.replaceAll(',', ';') ?? '';
+      csv.writeln(
+        '${expense.title.replaceAll(',', ';')},'
+        '${expense.amount},'
+        '${expense.category.name},'
+        '${expense.date.toIso8601String()},'
+        '${expense.paymentMethod.name},'
+        '$note,'
+        '${expense.isFavorite}',
+      );
+    }
+
+    // Save and share
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File(
+        '${directory.path}/expense_eye_backup_${DateTime.now().millisecondsSinceEpoch}.csv');
+    await file.writeAsString(csv.toString());
+
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path)], text: 'ExpenseEye Backup'),
+    );
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Data exported successfully'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 }
 
 class _ThemeModeDialog extends StatelessWidget {
@@ -105,30 +164,29 @@ class _ThemeModeDialog extends StatelessWidget {
       builder: (context, themeProvider, child) {
         return AlertDialog(
           title: const Text('Choose Theme'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<ThemeMode>(
-                title: const Text('Light'),
-                subtitle: const Text('Light theme for better visibility'),
-                value: ThemeMode.light,
-                groupValue: themeProvider.themeMode,
-                onChanged: (value) {
-                  themeProvider.setThemeMode(value!);
-                  Navigator.pop(context);
-                },
-              ),
-              RadioListTile<ThemeMode>(
-                title: const Text('Dark'),
-                subtitle: const Text('Dark theme for better eye comfort'),
-                value: ThemeMode.dark,
-                groupValue: themeProvider.themeMode,
-                onChanged: (value) {
-                  themeProvider.setThemeMode(value!);
-                  Navigator.pop(context);
-                },
-              ),
-            ],
+          content: RadioGroup<ThemeMode>(
+            groupValue: themeProvider.themeMode,
+            onChanged: (value) {
+              if (value != null) {
+                themeProvider.setThemeMode(value);
+                Navigator.pop(context);
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<ThemeMode>(
+                  title: const Text('Light'),
+                  subtitle: const Text('Light theme for better visibility'),
+                  value: ThemeMode.light,
+                ),
+                RadioListTile<ThemeMode>(
+                  title: const Text('Dark'),
+                  subtitle: const Text('Dark theme for better eye comfort'),
+                  value: ThemeMode.dark,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(

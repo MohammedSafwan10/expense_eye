@@ -76,12 +76,16 @@ class DatabaseHelper {
     );
   }
 
-  // Retrieves all expenses from the database, ordered by date descending.
-  Future<List<Expense>> getExpenses() async {
+  // Retrieves expenses from the database with pagination support.
+  // [limit] specifies number of records to fetch.
+  // [offset] specifies where to start fetching.
+  Future<List<Expense>> getExpenses({int? limit, int? offset}) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'expenses',
       orderBy: 'date DESC',
+      limit: limit,
+      offset: offset,
     );
     return maps.map((map) => Expense.fromMap(map)).toList();
   }
@@ -117,6 +121,20 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  // Deletes multiple expenses in a single transaction. Efficient for large datasets.
+  Future<void> deleteExpenses(List<String> ids) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      for (final id in ids) {
+        await txn.delete(
+          'expenses',
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+      }
+    });
   }
 
   // Deletes all data from the expenses table. Use with caution!

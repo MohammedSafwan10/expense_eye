@@ -13,9 +13,27 @@ class ExpenseProvider with ChangeNotifier {
   Set<String> _selectedExpenseIds = {};
   bool _isSelectionMode = false;
 
-  List<Expense> get expenses => _filterExpenses(_expenses);
+  // Pagination State
+  int _currentPage = 0;
+  final int _pageSize = 50;
+  bool _hasMore = true;
+  bool _isFetchingMore = false;
+
+  // Cached results for performance optimization
+  List<Expense>? _cachedFilteredExpenses;
+  List<MapEntry<DateTime, List<Expense>>>? _cachedGroupedExpenses;
+  double? _cachedTotalExpenses;
+  Map<ExpenseCategory, double>? _cachedExpensesByCategory;
+
+  List<Expense> get expenses {
+    _cachedFilteredExpenses ??= _filterExpenses(_expenses);
+    return _cachedFilteredExpenses!;
+  }
+
   List<Expense> get favoriteExpenses => _favoriteExpenses;
   bool get isLoading => _isLoading;
+  bool get isFetchingMore => _isFetchingMore;
+  bool get hasMore => _hasMore;
   String get searchQuery => _searchQuery;
   ExpenseCategory? get selectedCategory => _selectedCategory;
   DateTime? get selectedDate => _selectedDate;
@@ -23,28 +41,66 @@ class ExpenseProvider with ChangeNotifier {
   bool get isSelectionMode => _isSelectionMode;
 
   Future<void> loadExpenses() async {
+    debugPrint('📱 [ExpenseProvider] loadExpenses() called');
     _isLoading = true;
+    _currentPage = 0;
+    _hasMore = true;
     notifyListeners();
 
     try {
-      // Clear existing lists to prevent duplication issues
+      // Clear existing lists
       _expenses = [];
       _favoriteExpenses = [];
 
-      // Load expenses from database
-      _expenses = await _dbHelper.getExpenses();
+      // Load first page of expenses from database
+      debugPrint('📱 [ExpenseProvider] Fetching from database...');
+      _expenses = await _dbHelper.getExpenses(limit: _pageSize, offset: 0);
       _favoriteExpenses = await _dbHelper.getFavoriteExpenses();
 
-      // Sort expenses by date (most recent first)
-      _expenses.sort((a, b) => b.date.compareTo(a.date));
-      _favoriteExpenses.sort((a, b) => b.date.compareTo(a.date));
+      debugPrint(
+          '📱 [ExpenseProvider] Loaded ${_expenses.length} expenses, ${_favoriteExpenses.length} favorites');
+
+      if (_expenses.length < _pageSize) {
+        _hasMore = false;
+      }
     } catch (e) {
-      debugPrint('Error loading expenses: $e');
-      // Reset to empty lists in case of error
+      debugPrint('❌ [ExpenseProvider] Error loading expenses: $e');
       _expenses = [];
       _favoriteExpenses = [];
     } finally {
       _isLoading = false;
+      // IMPORTANT: Invalidate cache AFTER loading to ensure fresh data
+      _invalidateCache();
+      debugPrint(
+          '📱 [ExpenseProvider] Loading complete. isLoading=$_isLoading, count=${_expenses.length}');
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchMoreExpenses() async {
+    if (_isFetchingMore || !_hasMore) return;
+
+    _isFetchingMore = true;
+    _invalidateCache();
+    notifyListeners();
+
+    try {
+      _currentPage++;
+      final moreExpenses = await _dbHelper.getExpenses(
+        limit: _pageSize,
+        offset: _currentPage * _pageSize,
+      );
+
+      if (moreExpenses.isEmpty || moreExpenses.length < _pageSize) {
+        _hasMore = false;
+      }
+
+      _expenses.addAll(moreExpenses);
+    } catch (e) {
+      debugPrint('Error fetching more expenses: $e');
+      _hasMore = false;
+    } finally {
+      _isFetchingMore = false;
       notifyListeners();
     }
   }
@@ -52,14 +108,14 @@ class ExpenseProvider with ChangeNotifier {
   Future<void> addExpense(Expense expense) async {
     try {
       await _dbHelper.insertExpense(expense);
-      // Add to local list immediately for UI responsiveness
-      _expenses.add(expense);
+      // Insert at the beginning of the list (since it's sorted by date DESC)
+      _expenses.insert(0, expense);
       if (expense.isFavorite) {
-        _favoriteExpenses.add(expense);
+        _favoriteExpenses.insert(0, expense);
       }
+      _invalidateCache();
       notifyListeners();
-      // Then reload from database to ensure consistency
-      await loadExpenses();
+      // No need to reload everything from DB after a single add, local state is updated
     } catch (e) {
       debugPrint('Error adding expense: $e');
       await loadExpenses();
@@ -97,9 +153,7 @@ class ExpenseProvider with ChangeNotifier {
   }
 
   Future<void> deleteSelectedExpenses() async {
-    for (final id in _selectedExpenseIds) {
-      await _dbHelper.deleteExpense(id);
-    }
+    await _dbHelper.deleteExpenses(_selectedExpenseIds.toList());
     _selectedExpenseIds.clear();
     _isSelectionMode = false;
     await loadExpenses();
@@ -115,6 +169,7 @@ class ExpenseProvider with ChangeNotifier {
     if (!_isSelectionMode) {
       _selectedExpenseIds.clear();
     }
+    _invalidateCache();
     notifyListeners();
   }
 
@@ -124,32 +179,49 @@ class ExpenseProvider with ChangeNotifier {
     } else {
       _selectedExpenseIds.add(id);
     }
+    _invalidateCache();
     notifyListeners();
   }
 
   void selectAllExpenses() {
     _selectedExpenseIds = expenses.map((e) => e.id).toSet();
+    _invalidateCache();
     notifyListeners();
   }
 
   void clearSelection() {
     _selectedExpenseIds.clear();
     _isSelectionMode = false;
+    _invalidateCache();
     notifyListeners();
   }
 
   void setSearchQuery(String query) {
-    _searchQuery = query.toLowerCase();
-    notifyListeners();
+    final lowerQuery = query.toLowerCase();
+    if (_searchQuery != lowerQuery) {
+      _searchQuery = lowerQuery;
+      _invalidateCache();
+      notifyListeners();
+    }
+  }
+
+  void _invalidateCache() {
+    debugPrint('📱 [ExpenseProvider] Cache invalidated');
+    _cachedFilteredExpenses = null;
+    _cachedGroupedExpenses = null;
+    _cachedTotalExpenses = null;
+    _cachedExpensesByCategory = null;
   }
 
   void setSelectedCategory(ExpenseCategory? category) {
     _selectedCategory = category;
+    _invalidateCache();
     notifyListeners();
   }
 
   void setSelectedDate(DateTime? date) {
     _selectedDate = date;
+    _invalidateCache();
     notifyListeners();
   }
 
@@ -157,6 +229,7 @@ class ExpenseProvider with ChangeNotifier {
     _searchQuery = '';
     _selectedCategory = null;
     _selectedDate = null;
+    _invalidateCache();
     notifyListeners();
   }
 
@@ -190,16 +263,21 @@ class ExpenseProvider with ChangeNotifier {
   }
 
   double getTotalExpenses() {
-    return expenses.fold(0, (sum, expense) => sum + expense.amount);
+    _cachedTotalExpenses ??=
+        expenses.fold<double>(0.0, (sum, expense) => sum + expense.amount);
+    return _cachedTotalExpenses!;
   }
 
   Map<ExpenseCategory, double> getExpensesByCategory() {
-    final categoryMap = <ExpenseCategory, double>{};
-    for (final expense in expenses) {
-      categoryMap[expense.category] =
-          (categoryMap[expense.category] ?? 0) + expense.amount;
+    if (_cachedExpensesByCategory == null) {
+      final categoryMap = <ExpenseCategory, double>{};
+      for (final expense in expenses) {
+        categoryMap[expense.category] =
+            (categoryMap[expense.category] ?? 0) + expense.amount;
+      }
+      _cachedExpensesByCategory = categoryMap;
     }
-    return categoryMap;
+    return _cachedExpensesByCategory!;
   }
 
   List<Expense> getExpensesByDate(DateTime date) {
@@ -213,18 +291,22 @@ class ExpenseProvider with ChangeNotifier {
 
   double getDailyTotal(DateTime date) {
     return getExpensesByDate(date)
-        .fold(0, (sum, expense) => sum + expense.amount);
+        .fold<double>(0.0, (sum, expense) => sum + expense.amount);
   }
 
   List<MapEntry<DateTime, List<Expense>>> getGroupedExpenses() {
-    final groupedMap = <DateTime, List<Expense>>{};
+    if (_cachedGroupedExpenses == null) {
+      final groupedMap = <DateTime, List<Expense>>{};
 
-    for (final expense in expenses) {
-      final date =
-          DateTime(expense.date.year, expense.date.month, expense.date.day);
-      groupedMap.putIfAbsent(date, () => []).add(expense);
+      for (final expense in expenses) {
+        final date =
+            DateTime(expense.date.year, expense.date.month, expense.date.day);
+        groupedMap.putIfAbsent(date, () => []).add(expense);
+      }
+
+      _cachedGroupedExpenses = groupedMap.entries.toList()
+        ..sort((a, b) => b.key.compareTo(a.key));
     }
-
-    return groupedMap.entries.toList()..sort((a, b) => b.key.compareTo(a.key));
+    return _cachedGroupedExpenses!;
   }
 }
